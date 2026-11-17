@@ -1,6 +1,195 @@
 <mvc:View controllerName="codelco.portaldescuentos.controller.Home"
     xmlns:mvc="sap.ui.core.mvc"
-    xmlns="sap.m">
-    <Page id="page" title="{i18n>title}">
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+    xmlns:card="sap.f.cards"
+    xmlns:l="sap.ui.layout"
+    xmlns:core="sap.ui.core">
+
+    <Page id="homePage" showHeader="false">
+        <content>
+            <VBox id="homeContent" class="sapUiSmallMargin">
+
+                <!-- ===== Encabezado del período ===== -->
+                <OverflowToolbar id="tbHeader" style="Clear" height="auto">
+                    <VBox id="vbTitulo">
+                        <Title id="ttlPeriodo" text="Período {app>/periodo/texto}" level="H2" titleStyle="H3"/>
+                        <Text id="txtSubtitulo" text="{app>/subtitulo}"/>
+                    </VBox>
+                    <ToolbarSpacer id="tbsHeader"/>
+                    <Button id="btnPlantilla" text="Descargar plantilla" icon="sap-icon://download"
+                        press=".onDescargarPlantilla"/>
+                    <Button id="btnSubir" text="Subir archivo del período" icon="sap-icon://upload"
+                        type="Emphasized"
+                        enabled="{app>/puedeCargar}"
+                        tooltip="{app>/motivoNoCarga}"
+                        press=".onSubirArchivo"/>
+                </OverflowToolbar>
+
+                <MessageStrip id="msNoCarga"
+                    text="{app>/motivoNoCarga}"
+                    type="{= ${app>/periodo/abierto} ? 'Information' : 'Warning' }"
+                    showIcon="true"
+                    visible="{= !${app>/puedeCargar} &amp;&amp; !!${app>/motivoNoCarga} }"
+                    class="sapUiSmallMarginTop"/>
+
+                <!-- ===== Tarjetas ===== -->
+                <l:Grid id="gridCards" defaultSpan="XL4 L4 M6 S12" class="sapUiSmallMarginTop" containerQuery="true">
+
+                    <!-- Estado del período -->
+                    <f:Card id="cardPeriodo">
+                        <f:header>
+                            <card:Header id="hdrPeriodo" title="Estado del período" iconSrc="sap-icon://calendar"/>
+                        </f:header>
+                        <f:content>
+                            <VBox id="vbPeriodo" class="sapUiSmallMargin">
+                                <HBox id="hbEstado" alignItems="Center">
+                                    <ObjectStatus id="osEstado" text="{app>/periodo/estadoTexto}"
+                                        state="{app>/periodo/estadoState}" inverted="true"/>
+                                    <Text id="txtDias" class="sapUiSmallMarginBegin"
+                                        text="Quedan {app>/periodo/diasRestantes} días para cerrar"
+                                        visible="{= !!${app>/periodo/abierto} }"/>
+                                    <Text id="txtVencido" class="sapUiSmallMarginBegin"
+                                        text="Venció el {app>/periodo/cierre}"
+                                        visible="{= !${app>/periodo/abierto} }"/>
+                                </HBox>
+                                <ProgressIndicator id="piPeriodo" class="sapUiSmallMarginTop"
+                                    percentValue="{app>/periodo/avance}"
+                                    displayValue="{app>/periodo/apertura} → {app>/periodo/cierre}"
+                                    state="{= ${app>/periodo/abierto} ? 'Success' : 'Error' }"/>
+                                <Text id="txtRegla" class="sapUiTinyMarginTop"
+                                    text="Solo se admite un archivo por período. Los registros rechazados deben informarse en la carga del mes siguiente."/>
+                            </VBox>
+                        </f:content>
+                    </f:Card>
+
+                    <!-- Su archivo de este período -->
+                    <f:Card id="cardArchivo">
+                        <f:header>
+                            <card:Header id="hdrArchivo" title="Su archivo de este período" iconSrc="sap-icon://excel-attachment"/>
+                        </f:header>
+                        <f:content>
+                            <VBox id="vbArchivo" class="sapUiSmallMargin">
+                                <!-- Sin carga -->
+                                <VBox id="vbSinArchivo" visible="{= !${app>/cargaActual} }" alignItems="Center">
+                                    <core:Icon id="icoSinArchivo" src="sap-icon://document" size="2rem" color="Neutral"/>
+                                    <Text id="txtSinArchivo" class="sapUiTinyMarginTop"
+                                        text="Aún no envió su archivo para este período."/>
+                                </VBox>
+                                <!-- Con carga -->
+                                <VBox id="vbConArchivo" visible="{= !!${app>/cargaActual} }">
+                                    <Link id="lnkArchivo" text="{app>/cargaActual/nombreArchivo}" press=".onVerDetalleActual"/>
+                                    <Text id="txtArchivoInfo"
+                                        text="Cargado el {app>/cargaActual/fechaCarga} · {app>/cargaActual/totalRegistros} registros"/>
+                                    <HBox id="hbArchivoEstado" class="sapUiTinyMarginTop">
+                                        <ObjectStatus id="osArchivo" text="{app>/cargaActual/estado}"
+                                            state="{app>/cargaActual/estadoState}" inverted="true"/>
+                                        <ObjectStatus id="osRechazos" class="sapUiSmallMarginBegin"
+                                            text="{app>/cargaActual/totalRechazados} rechazados"
+                                            state="Error" inverted="true"
+                                            visible="{= ${app>/cargaActual/totalRechazados} > 0 }"/>
+                                    </HBox>
+                                    <Button id="btnVerDetalle" class="sapUiSmallMarginTop" width="100%"
+                                        text="Ver el detalle de mis registros" icon="sap-icon://list"
+                                        press=".onVerDetalleActual"/>
+                                </VBox>
+                            </VBox>
+                        </f:content>
+                    </f:Card>
+
+                    <!-- Conceptos autorizados -->
+                    <f:Card id="cardConceptos">
+                        <f:header>
+                            <card:Header id="hdrConceptos" title="Conceptos autorizados"
+                                subtitle="Habilitados por CODELCO para su institución" iconSrc="sap-icon://tag"/>
+                        </f:header>
+                        <f:content>
+                            <List id="lstConceptos" showSeparators="Inner"
+                                items="{mock>/conceptosAutorizados}"
+                                noDataText="Sin conceptos autorizados">
+                                <StandardListItem id="sliConcepto" title="{mock>ccnomina}"
+                                    description="{mock>descripcion}" icon="sap-icon://accept"/>
+                            </List>
+                        </f:content>
+                    </f:Card>
+                </l:Grid>
+
+                <!-- ===== Resultado de la carga (solo si está procesada) ===== -->
+                <Panel id="pnlResultado" headerText="Resultado de la carga {app>/periodo/texto}"
+                    class="sapUiSmallMarginTop"
+                    visible="{= !!${app>/cargaActual} &amp;&amp; ${app>/cargaActual/procesada} === true }">
+                    <HBox id="hbKpis" wrap="Wrap" justifyContent="SpaceBetween">
+                        <VBox id="kpiInformados" class="sapUiSmallMargin">
+                            <ObjectNumber id="onInformados" number="{app>/cargaActual/totalRegistros}" class="sapMObjectNumberLarge"/>
+                            <Label id="lblInformados" text="Registros informados"/>
+                        </VBox>
+                        <VBox id="kpiCargados" class="sapUiSmallMargin">
+                            <ObjectNumber id="onCargados" number="{app>/cargaActual/totalCargados}" state="Success" class="sapMObjectNumberLarge"/>
+                            <Label id="lblCargados" text="Cargados al IT0015"/>
+                        </VBox>
+                        <VBox id="kpiRechazados" class="sapUiSmallMargin">
+                            <ObjectNumber id="onRechazados" number="{app>/cargaActual/totalRechazados}" state="Error" class="sapMObjectNumberLarge"/>
+                            <Label id="lblRechazados" text="Rechazados · informar el mes siguiente"/>
+                        </VBox>
+                        <VBox id="kpiImporte" class="sapUiSmallMargin">
+                            <ObjectNumber id="onImporte" class="sapMObjectNumberLarge"
+                                number="{ path: 'app>/cargaActual/importeCargado', type: 'sap.ui.model.type.Integer', formatOptions: { groupingEnabled: true } }"
+                                unit="CLP"/>
+                            <Label id="lblImporte" text="Importe cargado"/>
+                        </VBox>
+                    </HBox>
+
+                    <Table id="tblMotivos" items="{app>/resumenMotivos}" noDataText="Sin rechazos"
+                        class="sapUiSmallMarginTop">
+                        <columns>
+                            <Column id="colMotivo"><Text id="hMotivo" text="Motivo de rechazo"/></Column>
+                            <Column id="colCant" hAlign="End" width="8rem"><Text id="hCant" text="Registros"/></Column>
+                        </columns>
+                        <items>
+                            <ColumnListItem id="cliMotivo">
+                                <cells>
+                                    <ObjectStatus id="osMotivo" text="{app>motivo}" state="Error" icon="sap-icon://error"/>
+                                    <Text id="txtCant" text="{app>cantidad}"/>
+                                </cells>
+                            </ColumnListItem>
+                        </items>
+                    </Table>
+                </Panel>
+
+                <!-- ===== Historial de cargas ===== -->
+                <Table id="tblHistorial" class="sapUiMediumMarginTop"
+                    items="{app>/historial}"
+                    noDataText="Sin cargas anteriores.">
+                    <headerToolbar>
+                        <OverflowToolbar id="tbHistorial">
+                            <Title id="ttlHistorial" text="Historial de cargas" level="H3"/>
+                        </OverflowToolbar>
+                    </headerToolbar>
+                    <columns>
+                        <Column id="colHPeriodo"><Text id="hHPeriodo" text="Período"/></Column>
+                        <Column id="colHArchivo" minScreenWidth="Tablet" demandPopin="true"><Text id="hHArchivo" text="Archivo"/></Column>
+                        <Column id="colHFecha" minScreenWidth="Tablet" demandPopin="true"><Text id="hHFecha" text="Fecha de carga"/></Column>
+                        <Column id="colHReg" hAlign="End"><Text id="hHReg" text="Registros"/></Column>
+                        <Column id="colHOk" hAlign="End"><Text id="hHOk" text="Cargados"/></Column>
+                        <Column id="colHRech" hAlign="End"><Text id="hHRech" text="Rechazados"/></Column>
+                        <Column id="colHEstado"><Text id="hHEstado" text="Estado"/></Column>
+                    </columns>
+                    <items>
+                        <ColumnListItem id="cliHistorial" type="Navigation" press=".onVerHistorial">
+                            <cells>
+                                <Text id="cHPeriodo" text="{app>periodoTexto}"/>
+                                <Text id="cHArchivo" text="{app>nombreArchivo}"/>
+                                <Text id="cHFecha" text="{app>fechaCarga}"/>
+                                <Text id="cHReg" text="{app>totalRegistros}"/>
+                                <Text id="cHOk" text="{app>totalCargados}"/>
+                                <Text id="cHRech" text="{app>totalRechazados}"/>
+                                <ObjectStatus id="cHEstado" text="{app>estado}" state="{app>estadoState}"/>
+                            </cells>
+                        </ColumnListItem>
+                    </items>
+                </Table>
+
+            </VBox>
+        </content>
     </Page>
 </mvc:View>

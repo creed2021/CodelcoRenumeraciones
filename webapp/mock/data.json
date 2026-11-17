@@ -1,0 +1,20 @@
+{
+  "parametros": {
+    "diaCierre": 15,
+    "maxRegistros": 5000,
+    "monedas": ["CLP", "UF"],
+    "columnasPlantilla": ["RUT", "CCNOMINA", "IMPORTE", "MONEDA"]
+  },
+  "institucion": {
+    "rut": "76.412.880-K",
+    "nombre": "Caja de Compensación Los Andes",
+    "correo": "convenios@ccla.cl",
+    "habilitada": true
+  },
+  "conceptosAutorizados": [
+    { "ccnomina": "7116", "descripcion": "Seguro", "multiplesLineas": true },
+    { "ccnomina": "7118", "descripcion": "Ahorro", "multiplesLineas": true },
+    { "ccnomina": "7119", "descripcion": "Préstamos", "multiplesLineas": true }
+  ],
+  "cargas": []
+}

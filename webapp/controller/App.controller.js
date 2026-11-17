@@ -1,10 +1,11 @@
 sap.ui.define([
-  "sap/ui/core/mvc/Controller"
-], (BaseController) => {
-  "use strict";
+    "sap/ui/core/mvc/Controller"
+], (Controller) => {
+    "use strict";
 
-  return BaseController.extend("codelco.portaldescuentos.controller.App", {
-      onInit() {
-      }
-  });
+    return Controller.extend("codelco.portaldescuentos.controller.App", {
+        onHome() {
+            this.getOwnerComponent().getRouter().navTo("RouteHome");
+        }
+    });
 });

@@ -1,7 +1,21 @@
 <mvc:View controllerName="codelco.portaldescuentos.controller.App"
-    displayBlock="true"
     xmlns:mvc="sap.ui.core.mvc"
-    xmlns="sap.m">
-    <App id="app">
-    </App>
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+    displayBlock="true">
+
+    <Page id="appPage" showHeader="false" enableScrolling="false">
+        <customHeader>
+            <f:ShellBar id="shellBar"
+                title="Entrega de Descuentos"
+                secondTitle="{mock>/institucion/nombre} · {mock>/institucion/rut}"
+                homeIcon="sap-icon://home"
+                homeIconPressed=".onHome"
+                showNotifications="false"
+                showProductSwitcher="false"/>
+        </customHeader>
+        <content>
+            <App id="app"/>
+        </content>
+    </Page>
 </mvc:View>
