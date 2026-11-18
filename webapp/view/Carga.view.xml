@@ -1,0 +1,182 @@
+<mvc:View controllerName="codelco.portaldescuentos.controller.Carga"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+    xmlns:card="sap.f.cards"
+    xmlns:l="sap.ui.layout"
+    xmlns:u="sap.ui.unified"
+    xmlns:core="sap.ui.core">
+
+    <Page id="cargaPage" showHeader="false">
+        <content>
+            <VBox id="cargaContent" class="sapUiSmallMargin">
+
+                <!-- ===== Encabezado ===== -->
+                <OverflowToolbar id="tbCarga" style="Clear" height="auto">
+                    <Button id="btnVolver" icon="sap-icon://nav-back" type="Transparent"
+                        tooltip="Volver al inicio" press=".onCancelar"/>
+                    <VBox id="vbCargaTitulo">
+                        <Breadcrumbs id="bcCarga" currentLocationText="Período {app>/periodo/texto}">
+                            <Link id="lnkInicio" text="Inicio" press=".onCancelar"/>
+                        </Breadcrumbs>
+                        <Title id="ttlCarga" text="Subir archivo del período" level="H2" titleStyle="H3"/>
+                    </VBox>
+                    <ToolbarSpacer id="tbsCarga"/>
+                    <Button id="btnCancelar" text="Cancelar" press=".onCancelar"/>
+                    <Button id="btnConfirmar" type="Emphasized" icon="sap-icon://paper-plane"
+                        text="Confirmar envío de {carga>/filas/length} registros"
+                        enabled="{= ${carga>/filas/length} > 0 }"
+                        press=".onConfirmar"/>
+                </OverflowToolbar>
+
+                <l:Grid id="gridCarga" defaultSpan="XL4 L4 M12 S12" class="sapUiSmallMarginTop" containerQuery="true">
+
+                    <!-- ===== Columna izquierda ===== -->
+                    <VBox id="vbIzq">
+                        <layoutData>
+                            <l:GridData id="gdIzq" span="XL4 L4 M12 S12"/>
+                        </layoutData>
+
+                        <!-- Archivo -->
+                        <f:Card id="cardArchivoCarga">
+                            <f:content>
+                                <VBox id="vbArchivoCarga" class="sapUiSmallMargin" width="100%">
+                                    <!-- Sin archivo -->
+                                    <VBox id="vbSinArchivoCarga" visible="{= !${carga>/nombreArchivo} }" alignItems="Center">
+                                        <core:Icon id="icoUpload" src="sap-icon://upload" size="2rem" color="Neutral"/>
+                                        <Text id="txtElegir" class="sapUiTinyMarginTopBottom" textAlign="Center"
+                                            text="Seleccione el archivo Excel del período (columnas RUT, CCNOMINA, IMPORTE, MONEDA)."/>
+                                        <u:FileUploader id="fuExcel"
+                                            buttonOnly="true"
+                                            buttonText="Seleccionar archivo"
+                                            icon="sap-icon://excel-attachment"
+                                            uploadOnChange="false"
+                                            fileType="xlsx,xls"
+                                            typeMissmatch=".onTipoInvalido"
+                                            change=".onArchivoSeleccionado"/>
+                                    </VBox>
+                                    <!-- Con archivo -->
+                                    <VBox id="vbConArchivoCarga" visible="{= !!${carga>/nombreArchivo} }">
+                                        <HBox id="hbArchivoCarga" alignItems="Center" justifyContent="SpaceBetween">
+                                            <HBox id="hbArchivoCargaIzq" alignItems="Center">
+                                                <core:Icon id="icoArchivoCarga" src="sap-icon://excel-attachment"
+                                                    color="Positive" size="1.5rem"/>
+                                                <VBox id="vbArchivoCargaTxt" class="sapUiSmallMarginBegin">
+                                                    <Title id="ttlArchivoCarga" text="{carga>/nombreArchivo}"
+                                                        level="H5" titleStyle="H6" wrapping="true"/>
+                                                    <Label id="lblArchivoCarga" text="{carga>/tamanio}"/>
+                                                </VBox>
+                                            </HBox>
+                                            <Button id="btnQuitar" text="Quitar" type="Reject" press=".onQuitar"/>
+                                        </HBox>
+                                        <ProgressIndicator id="piLectura" class="sapUiSmallMarginTop"
+                                            percentValue="100" showValue="false" height="0.4rem"
+                                            state="{= ${carga>/estructuraOk} ? 'Success' : 'Error' }"/>
+                                        <ObjectStatus id="osLectura"
+                                            text="{carga>/textoLectura}"
+                                            state="{= ${carga>/estructuraOk} ? 'Success' : 'Error' }"/>
+                                    </VBox>
+                                </VBox>
+                            </f:content>
+                        </f:Card>
+
+                        <!-- Validación previa -->
+                        <f:Card id="cardValidacion" class="sapUiSmallMarginTop"
+                            visible="{= !!${carga>/estructuraOk} }">
+                            <f:header>
+                                <card:Header id="hdrValidacion" title="Validación previa"
+                                    subtitle="Se ejecuta antes de actualizar el sistema de remuneraciones. Puede corregir el archivo y volver a subirlo mientras no confirme el envío."/>
+                            </f:header>
+                            <f:content>
+                                <VBox id="vbValidacion" width="100%">
+                                    <List id="lstChecks" items="{carga>/checks}" showSeparators="Inner">
+                                        <CustomListItem id="cliCheck">
+                                            <HBox id="hbCheck" alignItems="Start" class="sapUiSmallMarginBeginEnd sapUiTinyMarginTopBottom">
+                                                <core:Icon id="icoCheck"
+                                                    src="{= ${carga>ok} ? 'sap-icon://sys-enter-2' : 'sap-icon://alert' }"
+                                                    color="{= ${carga>ok} ? 'Positive' : 'Critical' }"
+                                                    class="sapUiTinyMarginTop"/>
+                                                <VBox id="vbCheck" class="sapUiSmallMarginBegin">
+                                                    <Text id="txtCheck" text="{carga>titulo}"/>
+                                                    <Label id="lblCheck" text="{carga>detalle}" wrapping="true"/>
+                                                </VBox>
+                                            </HBox>
+                                        </CustomListItem>
+                                    </List>
+                                    <MessageStrip id="msObservados" class="sapUiSmallMargin"
+                                        type="Warning" showIcon="true"
+                                        visible="{= ${carga>/observados} > 0 }"
+                                        text="Puede enviar el archivo con observaciones. Los registros que no pasen la validación quedarán rechazados con su motivo y deberán informarse en el período siguiente."/>
+                                </VBox>
+                            </f:content>
+                        </f:Card>
+                    </VBox>
+
+                    <!-- ===== Columna derecha: vista previa ===== -->
+                    <f:Card id="cardPreview">
+                        <f:layoutData>
+                            <l:GridData id="gdDer" span="XL8 L8 M12 S12"/>
+                        </f:layoutData>
+                        <f:header>
+                            <card:Header id="hdrPreview" title="Vista previa del archivo"
+                                subtitle="{= ${carga>/filas/length} > 0 ? ${carga>/filas/length} + ' registros · se resaltan las observaciones' : 'Seleccione un archivo para ver sus registros' }"/>
+                        </f:header>
+                        <f:content>
+                            <VBox id="vbPreview" width="100%">
+                                <HBox id="hbResumenPreview" class="sapUiSmallMarginBeginEnd" visible="{= ${carga>/filas/length} > 0 }">
+                                    <ObjectStatus id="osConformes" text="{carga>/conformes} conformes"
+                                        state="Success" inverted="true"/>
+                                    <ObjectStatus id="osObservadosPrev" class="sapUiSmallMarginBegin"
+                                        text="{carga>/observados} con observación"
+                                        state="Warning" inverted="true"
+                                        visible="{= ${carga>/observados} > 0 }"/>
+                                    <ToolbarSpacer id="tbsPrev"/>
+                                    <SegmentedButton id="sbFiltro" selectedKey="{carga>/filtro}" selectionChange=".onFiltroPreview"
+                                        width="18rem" class="sapUiSmallMarginBegin">
+                                        <items>
+                                            <SegmentedButtonItem id="sbiTodos" key="todos" text="Todos" width="6rem"/>
+                                            <SegmentedButtonItem id="sbiObs" key="obs" text="Con observación" width="12rem"/>
+                                        </items>
+                                    </SegmentedButton>
+                                </HBox>
+
+                                <Table id="tblPreview" items="{carga>/filas}" growing="true" growingThreshold="50"
+                                    noDataText="Sin registros." class="sapUiSmallMarginTop"
+                                    sticky="ColumnHeaders">
+                                    <columns>
+                                        <Column id="colPEst" width="3rem"/>
+                                        <Column id="colPLin" width="4rem"><Text id="hPLin" text="Línea"/></Column>
+                                        <Column id="colPRut"><Text id="hPRut" text="RUT trabajador"/></Column>
+                                        <Column id="colPCc"><Text id="hPCc" text="CC-Nómina"/></Column>
+                                        <Column id="colPImp" hAlign="End"><Text id="hPImp" text="Importe"/></Column>
+                                        <Column id="colPMon"><Text id="hPMon" text="Moneda"/></Column>
+                                        <Column id="colPObs" minScreenWidth="Tablet" demandPopin="true"><Text id="hPObs" text="Observación"/></Column>
+                                    </columns>
+                                    <items>
+                                        <ColumnListItem id="cliPreview"
+                                            highlight="{= ${carga>estado} === 'Observado' ? 'Warning' : 'None' }">
+                                            <cells>
+                                                <core:Icon id="icoFila"
+                                                    src="{= ${carga>estado} === 'Observado' ? 'sap-icon://alert' : 'sap-icon://sys-enter-2' }"
+                                                    color="{= ${carga>estado} === 'Observado' ? 'Critical' : 'Positive' }"/>
+                                                <Text id="cPLin" text="{carga>linea}"/>
+                                                <Text id="cPRut" text="{carga>rut}"/>
+                                                <ObjectStatus id="cPCc" text="{carga>ccnomina}" state="Information" inverted="true"
+                                                    visible="{= !!${carga>ccnomina} }"/>
+                                                <Text id="cPImp" text="{carga>importeTexto}"/>
+                                                <Text id="cPMon" text="{carga>moneda}"/>
+                                                <ObjectStatus id="cPObs" text="{= ${carga>estado} === 'Observado' ? ${carga>mensaje} : '—' }"
+                                                    state="{= ${carga>estado} === 'Observado' ? 'Warning' : 'None' }"/>
+                                            </cells>
+                                        </ColumnListItem>
+                                    </items>
+                                </Table>
+                            </VBox>
+                        </f:content>
+                    </f:Card>
+                </l:Grid>
+
+            </VBox>
+        </content>
+    </Page>
+</mvc:View>

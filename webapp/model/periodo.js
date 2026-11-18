@@ -1,3 +1,4 @@
+
 sap.ui.define([], () => {
     "use strict";
 
@@ -37,6 +38,7 @@ sap.ui.define([], () => {
                 estadoState: bAbierto ? "Success" : "Error",
                 diasRestantes: iDiasRestantes,
                 avance: iAvance,
+                siguienteTexto: `${pad(oProxApertura.getMonth() + 1)}/${oProxApertura.getFullYear()}`,
                 proximaApertura: fmt(oProxApertura),
                 proximoCierre: fmt(oProxCierre)
             };

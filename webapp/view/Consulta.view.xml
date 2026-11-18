@@ -1,0 +1,141 @@
+<mvc:View controllerName="codelco.portaldescuentos.controller.Consulta"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+    xmlns:l="sap.ui.layout"
+    xmlns:core="sap.ui.core">
+
+    <Page id="consultaPage" showHeader="false">
+        <content>
+            <VBox id="consultaContent" class="sapUiSmallMargin">
+
+                <!-- ===== Encabezado ===== -->
+                <OverflowToolbar id="tbConsulta" style="Clear" height="auto">
+                    <Button id="btnVolverC" icon="sap-icon://nav-back" type="Transparent"
+                        tooltip="Volver al inicio" press=".onVolver"/>
+                    <VBox id="vbConsultaTitulo">
+                        <Breadcrumbs id="bcConsulta" currentLocationText="Período {consulta>/periodoTexto}">
+                            <Link id="lnkInicioC" text="Inicio" press=".onVolver"/>
+                        </Breadcrumbs>
+                        <Title id="ttlConsulta" text="Consulta de registros informados" level="H2" titleStyle="H3"/>
+                        <Label id="lblConsultaSub" text="{consulta>/subtitulo}"/>
+                    </VBox>
+                    <ToolbarSpacer id="tbsConsulta"/>
+                    <Button id="btnExportar" text="Exportar a Excel" icon="sap-icon://excel-attachment"
+                        enabled="{= !!${consulta>/carga} }" press=".onExportar"/>
+                    <Button id="btnExportarRech" text="Descargar solo rechazados" icon="sap-icon://download"
+                        enabled="{= ${consulta>/kpi/error} > 0 }" press=".onExportarRechazados"/>
+                </OverflowToolbar>
+
+                <!-- Sin carga para el período -->
+                <IllustratedMessage id="imSinCarga" visible="{= !${consulta>/carga} }"
+                    illustrationType="sapIllus-NoData"
+                    title="Sin carga para este período"
+                    description="No se encontró un archivo enviado para el período {consulta>/periodoTexto}.">
+                    <additionalContent>
+                        <Button id="btnVolverIm" text="Volver al inicio" press=".onVolver"/>
+                    </additionalContent>
+                </IllustratedMessage>
+
+                <VBox id="vbConsultaDatos" visible="{= !!${consulta>/carga} }">
+
+                    <!-- ===== Filtros ===== -->
+                    <l:Grid id="gridFiltros" defaultSpan="XL3 L3 M6 S12" containerQuery="true" class="sapUiSmallMarginTop">
+                        <VBox id="vbFEstado">
+                            <Label id="lblFEstado" text="Estado"/>
+                            <Select id="selEstado" width="100%" selectedKey="{consulta>/filtros/estado}" change=".onFiltrar"
+                                items="{consulta>/estados}">
+                                <core:Item id="itEstado" key="{consulta>key}" text="{consulta>text}"/>
+                            </Select>
+                        </VBox>
+                        <VBox id="vbFConcepto">
+                            <Label id="lblFConcepto" text="Concepto"/>
+                            <Select id="selConcepto" width="100%" selectedKey="{consulta>/filtros/concepto}" change=".onFiltrar"
+                                items="{consulta>/conceptos}">
+                                <core:Item id="itConcepto" key="{consulta>key}" text="{consulta>text}"/>
+                            </Select>
+                        </VBox>
+                        <VBox id="vbFRut">
+                            <Label id="lblFRut" text="RUT trabajador"/>
+                            <SearchField id="sfRut" width="100%" placeholder="Buscar"
+                                value="{consulta>/filtros/rut}" search=".onFiltrar" liveChange=".onFiltrar"/>
+                        </VBox>
+                        <HBox id="hbFBotones" alignItems="End" height="100%">
+                            <Button id="btnLimpiarF" text="Limpiar filtros" type="Transparent" press=".onLimpiarFiltros"/>
+                        </HBox>
+                    </l:Grid>
+
+                    <!-- ===== KPIs ===== -->
+                    <l:Grid id="gridKpisC" defaultSpan="XL3 L3 M6 S12" containerQuery="true" class="sapUiSmallMarginTop">
+                        <f:Card id="kpiC1"><f:content>
+                            <VBox id="vbKC1" class="sapUiSmallMargin">
+                                <Label id="lblKC1t" text="{consulta>/periodoTexto}"/>
+                                <ObjectNumber id="onKC1" number="{consulta>/kpi/total}" class="sapMObjectNumberLarge"/>
+                                <Label id="lblKC1" text="Registros informados"/>
+                            </VBox>
+                        </f:content></f:Card>
+                        <f:Card id="kpiC2"><f:content>
+                            <VBox id="vbKC2" class="sapUiSmallMargin">
+                                <Label id="lblKC2t" text="{consulta>/kpi/okPct} % del archivo"/>
+                                <ObjectNumber id="onKC2" number="{consulta>/kpi/ok}" state="Success" class="sapMObjectNumberLarge"/>
+                                <Label id="lblKC2" text="{consulta>/kpi/okLabel}"/>
+                            </VBox>
+                        </f:content></f:Card>
+                        <f:Card id="kpiC3"><f:content>
+                            <VBox id="vbKC3" class="sapUiSmallMargin">
+                                <Label id="lblKC3t" text="{consulta>/kpi/errorTitulo}"/>
+                                <ObjectNumber id="onKC3" number="{consulta>/kpi/error}" state="Error" class="sapMObjectNumberLarge"/>
+                                <Label id="lblKC3" text="{consulta>/kpi/errorLabel}"/>
+                            </VBox>
+                        </f:content></f:Card>
+                        <f:Card id="kpiC4"><f:content>
+                            <VBox id="vbKC4" class="sapUiSmallMargin">
+                                <Label id="lblKC4t" text="Ver detalle abajo"/>
+                                <ObjectNumber id="onKC4" number="{consulta>/kpi/motivos}" class="sapMObjectNumberLarge"/>
+                                <Label id="lblKC4" text="Motivos distintos"/>
+                            </VBox>
+                        </f:content></f:Card>
+                    </l:Grid>
+
+                    <!-- ===== Tabla de registros ===== -->
+                    <Table id="tblRegistros" class="sapUiSmallMarginTop"
+                        items="{consulta>/registros}" growing="true" growingThreshold="20"
+                        noDataText="No hay registros para los filtros seleccionados." sticky="ColumnHeaders">
+                        <headerToolbar>
+                            <OverflowToolbar id="tbRegistros">
+                                <Title id="ttlRegistros" text="Registros ({consulta>/cantidadFiltrada})" level="H3"/>
+                            </OverflowToolbar>
+                        </headerToolbar>
+                        <columns>
+                            <Column id="colCLin" width="4rem"><Text id="hCLin" text="Línea"/></Column>
+                            <Column id="colCRut"><Text id="hCRut" text="RUT trabajador"/></Column>
+                            <Column id="colCCc"><Text id="hCCc" text="CC-Nómina"/></Column>
+                            <Column id="colCImp" hAlign="End"><Text id="hCImp" text="Importe"/></Column>
+                            <Column id="colCMon"><Text id="hCMon" text="Moneda"/></Column>
+                            <Column id="colCEst"><Text id="hCEst" text="Estado"/></Column>
+                            <Column id="colCMot" minScreenWidth="Tablet" demandPopin="true"><Text id="hCMot" text="Motivo"/></Column>
+                            <Column id="colCAcc" minScreenWidth="Desktop" demandPopin="true"><Text id="hCAcc" text="Acción sugerida"/></Column>
+                        </columns>
+                        <items>
+                            <ColumnListItem id="cliRegistro">
+                                <cells>
+                                    <Text id="cCLin" text="{consulta>linea}"/>
+                                    <Text id="cCRut" text="{consulta>rut}"/>
+                                    <ObjectStatus id="cCCc" text="{consulta>ccnomina}" state="Information" inverted="true"
+                                        visible="{= !!${consulta>ccnomina} }"/>
+                                    <Text id="cCImp" text="{consulta>importeTexto}"/>
+                                    <Text id="cCMon" text="{consulta>moneda}"/>
+                                    <ObjectStatus id="cCEst" text="{consulta>estado}" inverted="true"
+                                        state="{= ${consulta>estado} === 'Cargado' || ${consulta>estado} === 'Conforme' ? 'Success' : (${consulta>estado} === 'Rechazado' ? 'Error' : 'Warning') }"/>
+                                    <Text id="cCMot" text="{= ${consulta>mensaje} || '—' }"/>
+                                    <Text id="cCAcc" text="{consulta>accion}"/>
+                                </cells>
+                            </ColumnListItem>
+                        </items>
+                    </Table>
+                </VBox>
+
+            </VBox>
+        </content>
+    </Page>
+</mvc:View>

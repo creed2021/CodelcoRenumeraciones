@@ -16,5 +16,26 @@
     { "ccnomina": "7118", "descripcion": "Ahorro", "multiplesLineas": true },
     { "ccnomina": "7119", "descripcion": "Préstamos", "multiplesLineas": true }
   ],
+  "trabajadores": {
+    "_comentario": "Solo para simular el proceso SAP. RUT fuera de 'vigentes' → 'Rut no existe'.",
+    "vigentes": [
+      "19.676.432-1", "16.204.771-K", "20.118.903-9", "17.903.221-K",
+      "15.330.117-4", "12.445.908-7", "18.772.004-4", "14.203.998-2", "16.880.245-5"
+    ],
+    "inactivos": ["15.330.117-4"]
+  },
+  "motivos": [
+    { "mensaje": "Estructura incorrecta", "accion": "Use la plantilla con las columnas RUT, CCNOMINA, IMPORTE y MONEDA." },
+    { "mensaje": "RUT vacío", "accion": "Informe el RUT del trabajador." },
+    { "mensaje": "RUT inválido", "accion": "Verifique el RUT y su dígito verificador." },
+    { "mensaje": "Concepto no autorizado", "accion": "Use solo los conceptos habilitados para su institución." },
+    { "mensaje": "Importe vacío", "accion": "Informe el importe del descuento." },
+    { "mensaje": "Formato importe erróneo", "accion": "Importe numérico, sin letras ni separador de miles." },
+    { "mensaje": "Importe debe ser mayor a cero", "accion": "Informe un importe positivo." },
+    { "mensaje": "Moneda no admitida", "accion": "La moneda debe ser CLP o UF." },
+    { "mensaje": "Registro duplicado archivo", "accion": "Una línea por trabajador y concepto, salvo 7116, 7118 y 7119." },
+    { "mensaje": "Rut no existe", "accion": "Verifique el RUT del trabajador con su convenio." },
+    { "mensaje": "Rut no activo", "accion": "El trabajador no está vigente en CODELCO a la fecha de carga." }
+  ],
   "cargas": []
 }

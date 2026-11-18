@@ -37,21 +37,89 @@ sap.ui.define([
                   `Próximo período: del ${oPeriodo.proximaApertura} al ${oPeriodo.proximoCierre}.`;
             oApp.setProperty("/subtitulo", sSubtitulo);
 
-            // Resumen de motivos de rechazo de la carga actual (agrupado por mensaje)
-            const mMotivos = {};
-            (oCargaActual?.detalle || [])
-                .filter(d => d.estado === "Rechazado")
-                .forEach(d => { mMotivos[d.mensaje] = (mMotivos[d.mensaje] || 0) + 1; });
-            const aMotivos = Object.keys(mMotivos)
-                .map(m => ({ motivo: m, cantidad: mMotivos[m] }))
-                .sort((a, b) => b.cantidad - a.cantidad);
-            oApp.setProperty("/resumenMotivos", aMotivos);
+            // Resumen de la carga actual (KPIs + motivos agrupados)
+            this._armarResumen(oCargaActual);
 
             // Historial: todas las cargas excepto la del período actual, más recientes primero
             const aHistorial = aCargas
                 .filter(c => !(c.periodoMes === oPeriodo.mes && c.periodoAnio === oPeriodo.anio))
                 .sort((a, b) => (b.periodoAnio * 100 + b.periodoMes) - (a.periodoAnio * 100 + a.periodoMes));
             oApp.setProperty("/historial", aHistorial);
+        },
+
+        /**
+         * Arma KPIs y tabla de motivos.
+         * - Antes del proceso SAP: conformes / observados (validación en BTP).
+         * - Después del proceso SAP: cargados / rechazados.
+         */
+        _armarResumen(oCarga) {
+            const oApp = this.getOwnerComponent().getModel("app");
+            const aCatalogo = this.getOwnerComponent().getModel("mock").getProperty("/motivos") || [];
+
+            if (!oCarga) {
+                oApp.setProperty("/resumen", {});
+                oApp.setProperty("/resumenMotivos", []);
+                return;
+            }
+
+            const bProcesada = !!oCarga.procesada;
+            const aDetalle = oCarga.detalle || [];
+            const sEstadoError = bProcesada ? "Rechazado" : "Observado";
+            const aErrores = aDetalle.filter(d => d.estado === sEstadoError);
+
+            // Importe total de los registros válidos, separado por moneda (CLP y UF no se suman)
+            const sumar = sMoneda => aDetalle
+                .filter(d => d.estado !== sEstadoError && d.moneda === sMoneda)
+                .reduce((s, d) => s + (Number(d.importe) || 0), 0);
+            const fCLP = sumar("CLP");
+            const fUF = sumar("UF");
+
+            oApp.setProperty("/resumen", {
+                subtitulo: bProcesada
+                    ? `${oCarga.totalRegistros} registros informados · procesados el ${oCarga.fechaProceso}`
+                    : `${oCarga.totalRegistros} registros informados · enviado el ${oCarga.fechaCarga} · pendiente de proceso en SAP`,
+                informados: oCarga.totalRegistros,
+                ok: bProcesada ? oCarga.totalCargados : oCarga.totalConformes,
+                okLabel: bProcesada ? "Procesados y cargados al IT0015" : "Conformes · pendientes de proceso",
+                error: aErrores.length,
+                errorLabel: bProcesada
+                    ? `Rechazados · se informan en ${this.getOwnerComponent().getModel("app").getProperty("/periodo/siguienteTexto")}`
+                    : "Con observación · quedarán rechazados",
+                importeCLP: Math.round(fCLP).toLocaleString("es-CL"),
+                importeUF: fUF ? fUF.toLocaleString("es-CL", { maximumFractionDigits: 2 }) : ""
+            });
+
+            // Agrupar por motivo
+            const mMotivos = {};
+            aErrores.forEach(d => { mMotivos[d.mensaje] = (mMotivos[d.mensaje] || 0) + 1; });
+            const iMax = Math.max(1, ...Object.values(mMotivos));
+            const aMotivos = Object.keys(mMotivos)
+                .map(m => ({
+                    motivo: m,
+                    cantidad: mMotivos[m],
+                    porcentaje: Math.round((mMotivos[m] / iMax) * 100),
+                    accion: (aCatalogo.find(c => c.mensaje === m) || {}).accion || "Revise el registro y vuelva a informarlo."
+                }))
+                .sort((a, b) => b.cantidad - a.cantidad);
+            oApp.setProperty("/resumenMotivos", aMotivos);
+        },
+
+        /** Exporta el resumen de motivos a Excel */
+        onExportarResumen() {
+            if (!window.XLSX) {
+                MessageBox.warning("La librería Excel todavía se está cargando.");
+                return;
+            }
+            const oApp = this.getOwnerComponent().getModel("app");
+            const aFilas = (oApp.getProperty("/resumenMotivos") || []).map(m => ({
+                "Motivo de rechazo": m.motivo,
+                "Registros": m.cantidad,
+                "Qué debe corregir": m.accion
+            }));
+            const oHoja = window.XLSX.utils.json_to_sheet(aFilas);
+            const oLibro = window.XLSX.utils.book_new();
+            window.XLSX.utils.book_append_sheet(oLibro, oHoja, "Resumen");
+            window.XLSX.writeFile(oLibro, `resumen_carga_${oApp.getProperty("/periodo/texto").replace("/", "-")}.xlsx`);
         },
 
         /** Genera un Excel vacío con las columnas de la plantilla (usa xlsx.safe.js) */
@@ -70,6 +138,27 @@ sap.ui.define([
             XLSX.writeFile(oLibro, "plantilla_descuentos.xlsx");
 
             MessageToast.show("Plantilla descargada");
+        },
+
+        // ================= 🧪 Herramientas de prueba (mock) =================
+
+        onSimularProcesoSAP() {
+            if (this.getOwnerComponent().simularProcesoSAP()) {
+                this._armarDatosHome();
+                MessageToast.show("Proceso SAP simulado");
+            }
+        },
+
+        onLimpiarPruebas() {
+            MessageBox.confirm("Se borrarán todas las cargas de prueba guardadas en este navegador. ¿Continuar?", {
+                onClose: (sAccion) => {
+                    if (sAccion === MessageBox.Action.OK) {
+                        this.getOwnerComponent().limpiarCargas();
+                        this._armarDatosHome();
+                        MessageToast.show("Datos de prueba eliminados");
+                    }
+                }
+            });
         },
 
         onSubirArchivo() {

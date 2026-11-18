@@ -78,19 +78,36 @@
                                 </VBox>
                                 <!-- Con carga -->
                                 <VBox id="vbConArchivo" visible="{= !!${app>/cargaActual} }">
-                                    <Link id="lnkArchivo" text="{app>/cargaActual/nombreArchivo}" press=".onVerDetalleActual"/>
-                                    <Text id="txtArchivoInfo"
-                                        text="Cargado el {app>/cargaActual/fechaCarga} · {app>/cargaActual/totalRegistros} registros"/>
-                                    <HBox id="hbArchivoEstado" class="sapUiTinyMarginTop">
+                                    <!-- Ícono + nombre del archivo + fecha y registros -->
+                                    <HBox id="hbArchivoNombre" alignItems="Center">
+                                        <core:Icon id="icoArchivo" src="sap-icon://excel-attachment"
+                                            color="Positive" size="1.5rem"/>
+                                        <VBox id="vbArchivoTexto" class="sapUiSmallMarginBegin">
+                                            <Title id="ttlArchivo" text="{app>/cargaActual/nombreArchivo}"
+                                                level="H5" titleStyle="H6" wrapping="true"/>
+                                            <Label id="lblArchivoInfo" wrapping="true"
+                                                text="Cargado el {app>/cargaActual/fechaCarga} · {app>/cargaActual/totalRegistros} registros"/>
+                                        </VBox>
+                                    </HBox>
+                                    <!-- Etiquetas de estado -->
+                                    <HBox id="hbArchivoEstado" class="sapUiSmallMarginTop" wrap="Wrap">
                                         <ObjectStatus id="osArchivo" text="{app>/cargaActual/estado}"
-                                            state="{app>/cargaActual/estadoState}" inverted="true"/>
+                                            state="{app>/cargaActual/estadoState}"
+                                            icon="sap-icon://sys-enter-2" inverted="true"/>
+                                        <!-- Antes del proceso SAP: observados en la validación -->
+                                        <ObjectStatus id="osObservados" class="sapUiSmallMarginBegin"
+                                            text="{app>/cargaActual/totalObservados} observados"
+                                            state="Warning" inverted="true"
+                                            visible="{= !${app>/cargaActual/procesada} &amp;&amp; ${app>/cargaActual/totalObservados} > 0 }"/>
+                                        <!-- Después del proceso SAP: rechazados -->
                                         <ObjectStatus id="osRechazos" class="sapUiSmallMarginBegin"
                                             text="{app>/cargaActual/totalRechazados} rechazados"
                                             state="Error" inverted="true"
-                                            visible="{= ${app>/cargaActual/totalRechazados} > 0 }"/>
+                                            visible="{= !!${app>/cargaActual/procesada} &amp;&amp; ${app>/cargaActual/totalRechazados} > 0 }"/>
                                     </HBox>
                                     <Button id="btnVerDetalle" class="sapUiSmallMarginTop" width="100%"
                                         text="Ver el detalle de mis registros" icon="sap-icon://list"
+                                        type="Ghost"
                                         press=".onVerDetalleActual"/>
                                 </VBox>
                             </VBox>
@@ -104,57 +121,92 @@
                                 subtitle="Habilitados por CODELCO para su institución" iconSrc="sap-icon://tag"/>
                         </f:header>
                         <f:content>
-                            <List id="lstConceptos" showSeparators="Inner"
-                                items="{mock>/conceptosAutorizados}"
-                                noDataText="Sin conceptos autorizados">
-                                <StandardListItem id="sliConcepto" title="{mock>ccnomina}"
-                                    description="{mock>descripcion}" icon="sap-icon://accept"/>
-                            </List>
+                            <VBox id="vbConceptos" width="100%">
+                                <List id="lstConceptos" showSeparators="None"
+                                    items="{mock>/conceptosAutorizados}"
+                                    noDataText="Sin conceptos autorizados">
+                                    <CustomListItem id="cliConcepto">
+                                        <HBox id="hbConcepto" alignItems="Center" justifyContent="SpaceBetween"
+                                            class="sapUiSmallMarginBeginEnd sapUiTinyMarginTopBottom">
+                                            <HBox id="hbConceptoIzq" alignItems="Center">
+                                                <ObjectStatus id="osCcnomina" text="{mock>ccnomina}"
+                                                    state="Information" inverted="true"/>
+                                                <Text id="txtConceptoDesc" text="{mock>descripcion}"
+                                                    class="sapUiSmallMarginBegin"/>
+                                            </HBox>
+                                            <core:Icon id="icoConceptoOk" src="sap-icon://sys-enter-2" color="Positive"/>
+                                        </HBox>
+                                    </CustomListItem>
+                                </List>
+                                <Label id="lblConceptosNota" wrapping="true"
+                                    class="sapUiSmallMarginBeginEnd sapUiSmallMarginBottom sapUiTinyMarginTop"
+                                    text="Informar un concepto no habilitado provoca el rechazo del registro."/>
+                            </VBox>
                         </f:content>
                     </f:Card>
                 </l:Grid>
 
-                <!-- ===== Resultado de la carga (solo si está procesada) ===== -->
-                <Panel id="pnlResultado" headerText="Resultado de la carga {app>/periodo/texto}"
-                    class="sapUiSmallMarginTop"
-                    visible="{= !!${app>/cargaActual} &amp;&amp; ${app>/cargaActual/procesada} === true }">
-                    <HBox id="hbKpis" wrap="Wrap" justifyContent="SpaceBetween">
-                        <VBox id="kpiInformados" class="sapUiSmallMargin">
-                            <ObjectNumber id="onInformados" number="{app>/cargaActual/totalRegistros}" class="sapMObjectNumberLarge"/>
-                            <Label id="lblInformados" text="Registros informados"/>
-                        </VBox>
-                        <VBox id="kpiCargados" class="sapUiSmallMargin">
-                            <ObjectNumber id="onCargados" number="{app>/cargaActual/totalCargados}" state="Success" class="sapMObjectNumberLarge"/>
-                            <Label id="lblCargados" text="Cargados al IT0015"/>
-                        </VBox>
-                        <VBox id="kpiRechazados" class="sapUiSmallMargin">
-                            <ObjectNumber id="onRechazados" number="{app>/cargaActual/totalRechazados}" state="Error" class="sapMObjectNumberLarge"/>
-                            <Label id="lblRechazados" text="Rechazados · informar el mes siguiente"/>
-                        </VBox>
-                        <VBox id="kpiImporte" class="sapUiSmallMargin">
-                            <ObjectNumber id="onImporte" class="sapMObjectNumberLarge"
-                                number="{ path: 'app>/cargaActual/importeCargado', type: 'sap.ui.model.type.Integer', formatOptions: { groupingEnabled: true } }"
-                                unit="CLP"/>
-                            <Label id="lblImporte" text="Importe cargado"/>
-                        </VBox>
-                    </HBox>
+                <!-- ===== Resultado de la carga (visible apenas hay una carga en el período) ===== -->
+                <f:Card id="cardResultado" class="sapUiSmallMarginTop sapUiTinyMarginBeginEnd"
+                    visible="{= !!${app>/cargaActual} }">
+                    <f:header>
+                        <card:Header id="hdrResultado"
+                            title="Resultado de la carga {app>/periodo/texto}"
+                            subtitle="{app>/resumen/subtitulo}">
+                            <card:toolbar>
+                                <Button id="btnExportarResumen" text="Exportar" icon="sap-icon://download"
+                                    type="Transparent" press=".onExportarResumen"/>
+                            </card:toolbar>
+                        </card:Header>
+                    </f:header>
+                    <f:content>
+                        <VBox id="vbResultado" width="100%">
+                            <!-- 4 KPIs compactos -->
+                            <l:Grid id="gridKpis" defaultSpan="XL3 L3 M6 S12" containerQuery="true"
+                                vSpacing="0.5" hSpacing="0.5" class="sapUiSmallMarginBeginEnd">
+                                <VBox id="kpi1" class="pdKpi">
+                                    <ObjectNumber id="onKpi1" number="{app>/resumen/informados}" class="pdKpiValor"/>
+                                    <Label id="lblKpi1" text="Registros informados"/>
+                                </VBox>
+                                <VBox id="kpi2" class="pdKpi">
+                                    <ObjectNumber id="onKpi2" number="{app>/resumen/ok}" state="Success" class="pdKpiValor"/>
+                                    <Label id="lblKpi2" text="{app>/resumen/okLabel}"/>
+                                </VBox>
+                                <VBox id="kpi3" class="pdKpi">
+                                    <ObjectNumber id="onKpi3" number="{app>/resumen/error}" state="Error" class="pdKpiValor"/>
+                                    <Label id="lblKpi3" text="{app>/resumen/errorLabel}"/>
+                                </VBox>
+                                <VBox id="kpi4" class="pdKpi">
+                                    <ObjectNumber id="onKpi4" number="$ {app>/resumen/importeCLP}" class="pdKpiValor"/>
+                                    <Label id="lblKpi4"
+                                        text="{= ${app>/resumen/importeUF} ? 'Importe total CLP · + ' + ${app>/resumen/importeUF} + ' UF' : 'Importe total CLP' }"/>
+                                </VBox>
+                            </l:Grid>
 
-                    <Table id="tblMotivos" items="{app>/resumenMotivos}" noDataText="Sin rechazos"
-                        class="sapUiSmallMarginTop">
-                        <columns>
-                            <Column id="colMotivo"><Text id="hMotivo" text="Motivo de rechazo"/></Column>
-                            <Column id="colCant" hAlign="End" width="8rem"><Text id="hCant" text="Registros"/></Column>
-                        </columns>
-                        <items>
-                            <ColumnListItem id="cliMotivo">
-                                <cells>
-                                    <ObjectStatus id="osMotivo" text="{app>motivo}" state="Error" icon="sap-icon://error"/>
-                                    <Text id="txtCant" text="{app>cantidad}"/>
-                                </cells>
-                            </ColumnListItem>
-                        </items>
-                    </Table>
-                </Panel>
+                            <!-- Motivos de rechazo -->
+                            <Table id="tblMotivos" items="{app>/resumenMotivos}"
+                                noDataText="Sin registros con error." class="sapUiSmallMarginTop">
+                                <columns>
+                                    <Column id="colMotivo"><Text id="hMotivo" text="Motivo de rechazo"/></Column>
+                                    <Column id="colCant" hAlign="End" width="7rem"><Text id="hCant" text="Registros"/></Column>
+                                    <Column id="colDist" width="12rem" minScreenWidth="Tablet" demandPopin="true"><Text id="hDist" text="Distribución"/></Column>
+                                    <Column id="colAccion" minScreenWidth="Tablet" demandPopin="true"><Text id="hAccion" text="Qué debe corregir"/></Column>
+                                </columns>
+                                <items>
+                                    <ColumnListItem id="cliMotivo">
+                                        <cells>
+                                            <ObjectStatus id="osMotivo" text="{app>motivo}" state="Error" icon="sap-icon://error"/>
+                                            <ObjectNumber id="onCant" number="{app>cantidad}" emphasized="true"/>
+                                            <ProgressIndicator id="piDist" percentValue="{app>porcentaje}"
+                                                showValue="false" state="Error" height="0.5rem" displayOnly="true"/>
+                                            <Text id="txtAccion" text="{app>accion}"/>
+                                        </cells>
+                                    </ColumnListItem>
+                                </items>
+                            </Table>
+                        </VBox>
+                    </f:content>
+                </f:Card>
 
                 <!-- ===== Historial de cargas ===== -->
                 <Table id="tblHistorial" class="sapUiMediumMarginTop"
@@ -188,6 +240,18 @@
                         </ColumnListItem>
                     </items>
                 </Table>
+
+                <!-- ===== 🧪 Herramientas de prueba (solo mock, se quitan al conectar el CAP) ===== -->
+                <OverflowToolbar id="tbPruebas" class="sapUiMediumMarginTop" style="Clear">
+                    <core:Icon id="icoPruebas" src="sap-icon://lab" color="Neutral"/>
+                    <Label id="lblPruebas" text="Herramientas de prueba (datos ficticios)"/>
+                    <ToolbarSpacer id="tbsPruebas"/>
+                    <Button id="btnSimularSAP" text="Simular proceso SAP" icon="sap-icon://process"
+                        enabled="{= !!${app>/cargaActual} &amp;&amp; !${app>/cargaActual/procesada} }"
+                        press=".onSimularProcesoSAP"/>
+                    <Button id="btnLimpiarPruebas" text="Limpiar datos de prueba" icon="sap-icon://delete"
+                        type="Transparent" press=".onLimpiarPruebas"/>
+                </OverflowToolbar>
 
             </VBox>
         </content>
